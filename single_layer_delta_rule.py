@@ -2,7 +2,7 @@ import numpy as np
 import activation_functions as act_funs
 import matplotlib.pyplot as plt
 
-class Single_Layer_Perceptron():
+class Single_Layer_Delta_Rule():
     
     def __init__(self, X, T, bias = True):
         self.N = X.shape[1]
@@ -30,25 +30,16 @@ class Single_Layer_Perceptron():
     def init_W(self):
         return np.random.rand(self.output_dim, self.D)
     
-    def indicator(self, W, x):
-        if np.matmul(W, x) >= 0:
-            return 1
-        else:
-            return 0
-    
     def seq_learn(self):
         se = 0
         for i in range(self.N):
-            delta_W = 0
-            x = self.X[:,i].reshape(self.D, 1)
-            y = self.indicator(self.W_train, x)
+            x = self.X[:,i].reshape(self.X.shape[0], 1)
+            y = np.matmul(self.W_train, x)
             t = self.T[:,i]
-            if t == 0 and y == 1:
-                delta_W = -self.eta*x.T
-            if t == 1 and y == 0:
-                delta_W = self.eta*x.T
+            e = t - y
+            delta_W = self.eta*e*x.T
             self.W_train = np.add(self.W_train, delta_W)
-            se += (y-t)**2
+            se += 0.5*(e)**2
         mse = np.mean(se)
         self.errors.append(mse)
     
@@ -56,14 +47,12 @@ class Single_Layer_Perceptron():
         se = 0
         delta_W = 0
         for i in range(self.N):
-            x = self.X[:,i].reshape(self.D, 1)
-            y = self.indicator(self.W_train, x)
+            x = self.X[:,i].reshape(self.X.shape[0], 1)
+            y = np.matmul(self.W_train, x)
             t = self.T[:,i]
-            if t == 0 and y == 1:
-                delta_W += -self.eta*x.T
-            if t == 1 and y == 0:
-                delta_W += self.eta*x.T
-            se += (y-t)**2
+            e = t - y
+            delta_W += self.eta*e*x.T
+            se += 0.5*(e)**2
         mse = np.mean(se)
         self.W_train = np.add(self.W_train, delta_W)
         self.errors.append(mse)
