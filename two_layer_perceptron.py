@@ -102,7 +102,7 @@ class Two_Layer_Delta_Rule():
                 for j in range(self.hidden_dim):
                     w_j = self.W2_train[:,j] # len(w_j) = k
                     h_j_in = h_in[j]
-                    act_fun_prime = act_funs.shifted_sigmoid_prime(h_j_in)
+                    act_fun_prime = act_funs.shifted_sigmoid_prime(act_funs.shifted_sigmoid(h_j_in))
                     delta_j_vec[j] = np.sum(np.matmul(delta_k_vec, w_j)*
                                            act_fun_prime)
                     delta_W1[j,i] += self.eta*delta_j_vec[j]*x[i]
@@ -152,7 +152,7 @@ class Two_Layer_Delta_Rule():
         n_grid = 100
         classify = np.vectorize(lambda x1, x2: self.classification_function(np.array([x1, x2, 1])))
         grid_x, grid_y = np.meshgrid(np.linspace(-2, 2, n_grid),
-                                     np.linspace(-1, 6, n_grid))
+                                     np.linspace(-1, 1, n_grid))
         grid_class = classify(grid_x, grid_y).flatten()
         grid_colors = np.vectorize(lambda x: label_color_map.get(x))(grid_class)
         plt.scatter(grid_x, grid_y, c=grid_colors, alpha=0.05)

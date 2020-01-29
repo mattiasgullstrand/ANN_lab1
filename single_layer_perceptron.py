@@ -42,28 +42,30 @@ class Single_Layer_Perceptron():
             delta_W = 0
             x = self.X[:,i].reshape(self.D, 1)
             y = self.indicator(self.W_train, x)
+            y_in = np.matmul(self.W_train, x)
             t = self.T[:,i]
             if t == 0 and y == 1:
                 delta_W = -self.eta*x.T
             if t == 1 and y == 0:
                 delta_W = self.eta*x.T
             self.W_train = np.add(self.W_train, delta_W)
-            se += (y-t)**2
+            se += 0.5*((y-t)**2)
         mse = np.mean(se)
         self.errors.append(mse)
     
     def batch_learn(self):
-        se = 0
+        se = []
         delta_W = 0
         for i in range(self.N):
             x = self.X[:,i].reshape(self.D, 1)
             y = self.indicator(self.W_train, x)
+            y_in = np.matmul(self.W_train, x)
             t = self.T[:,i]
             if t == 0 and y == 1:
                 delta_W += -self.eta*x.T
             if t == 1 and y == 0:
                 delta_W += self.eta*x.T
-            se += (y-t)**2
+            se.append((y-t)**2)
         mse = np.mean(se)
         self.W_train = np.add(self.W_train, delta_W)
         self.errors.append(mse)

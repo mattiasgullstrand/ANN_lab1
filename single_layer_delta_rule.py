@@ -34,26 +34,28 @@ class Single_Layer_Delta_Rule():
         se = 0
         for i in range(self.N):
             x = self.X[:,i].reshape(self.X.shape[0], 1)
-            y = np.matmul(self.W_train, x)
+            y_in = np.matmul(self.W_train, x)
+            y = np.sign(y_in)
             t = self.T[:,i]
             e = t - y
             delta_W = self.eta*e*x.T
             self.W_train = np.add(self.W_train, delta_W)
-            se += 0.5*(e)**2
-        mse = np.mean(se)
+            se += e**2
+        mse = np.mean(se)*0.5
         self.errors.append(mse)
     
     def batch_learn(self):
-        se = 0
+        se = []
         delta_W = 0
         for i in range(self.N):
             x = self.X[:,i].reshape(self.X.shape[0], 1)
             y = np.matmul(self.W_train, x)
+            #y = np.sign(y)
             t = self.T[:,i]
             e = t - y
             delta_W += self.eta*e*x.T
-            se += 0.5*(e)**2
-        mse = np.mean(se)
+            se.append(e**2)
+        mse = np.mean(se)*0.5
         self.W_train = np.add(self.W_train, delta_W)
         self.errors.append(mse)
     
@@ -79,6 +81,8 @@ class Single_Layer_Delta_Rule():
             0: 'r',
             -1: 'r'
         }
+        if not self.bias:
+            weights.append(0)
         label_colors = list(map(lambda x: label_color_map.get(x), labels))
     
         boundary_func = lambda x: -(weights[0]*x + weights[2])/weights[1]
