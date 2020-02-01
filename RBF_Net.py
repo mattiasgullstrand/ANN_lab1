@@ -1,6 +1,7 @@
 import numpy as np
 import activation_functions_v2 as act_funs
 import matplotlib.pyplot as plt
+import random
 
 class RBF_Net():
     """
@@ -27,6 +28,9 @@ class RBF_Net():
         self.sigmas = self.init_sigmas()
         self.weights = self.init_weights()
         self.weight_learn = weight_learn
+        self.rbf_step_size = 0.2
+        self.rbf_updates = self.N
+        self.winners = 1
     
     def init_mus(self):
         return np.linspace(np.min(self.X), np.max(self.X), self.hidden_dim)
@@ -79,6 +83,24 @@ class RBF_Net():
         abs_model_diff = np.abs(net_out - f)
         abs_residual = np.mean(abs_model_diff)
         self.errors.append(abs_residual)
+    
+    def CL_rbf_units(self):
+        for update in range(self.rbf_updates):
+            rand_idx = random.randrange(self.N)
+            x = self.X[:,i].reshape(X.shape[0], 1)
+            distances = np.zeros(self.hidden_dim, dtype = object)
+            for unit_idx in range(self.hidden_dim):
+                dist = sq_2_norm(x, self.mus[unit_idx])
+                distances[rand_idx] = np.array([unit_idx, dist])
+            sorted_dists = distances[distances[:,1].argsort()]
+            unit_inds = sorted_dists[:self.winners,:]
+    
+    def update_rbf_centre(self, x, w_idx):
+        w = self.mus[w_idx]
+        self.mus[w_idx] = w + self.rbf_step_size*(x - w)
+    
+    def sq_2_norm(self, x1, x2):
+        return np.matmul((x1 - x2).T, (x1 - x2))
         
     def square_transform(self, x):
         return np.sign(x)
