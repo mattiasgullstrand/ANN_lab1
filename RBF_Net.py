@@ -13,7 +13,7 @@ class RBF_Net():
             sum to compute the output for a given x.
         
     """
-    def __init__(self, X, T, hidden_dim):
+    def __init__(self, X, T, hidden_dim, weight_learn = 'ls'):
         self.N = X.shape[1]
         self.output_dim = T.shape[0]
         self.hidden_dim = hidden_dim
@@ -26,6 +26,7 @@ class RBF_Net():
         self.mus = self.init_mus()
         self.sigmas = self.init_sigmas()
         self.weights = self.init_weights()
+        self.weight_learn = weight_learn
     
     def init_mus(self):
         return np.linspace(np.min(self.X), np.max(self.X), self.hidden_dim)
@@ -34,7 +35,7 @@ class RBF_Net():
         return np.ones(self.hidden_dim)
     
     def init_weights(self):
-        return np.random.rand(self.hidden_dim, self.output_dim)
+        return np.random.rand(self.hidden_dim, 1)
     
     def calc_Phi(self, X):
         # Specify which X
@@ -49,15 +50,29 @@ class RBF_Net():
     
     def learn_weights_least_squares(self):
         # Learn weights in batch mode, taking all samples
-        # into consideration per update. 
+        # into consideration per update. Using pseudo-inverse. 
         Phi = self.calc_Phi(self.X)
         f = self.T
         Phi_sq_inv = np.linalg.pinv(np.matmul(Phi.T, Phi))
         Phi_t_f = np.matmul(Phi.T, f)
         self.weights = np.matmul(Phi_sq_inv, Phi_t_f)
     
+    def learn_weights_delta_rule(self):
+        # Incrementally update the weights with the delta rule
+        Phi = self.calc_Phi(self.X)
+        f = self.T
+        for k in range(self.N):
+            Phi_xk = Phi[k,:].reshape(Phi.shape[1], 1)
+            f_xk = f[k,:].reshape(1,1)
+            e = f_xk - np.matmul(Phi_xk.T, self.weights)
+            weight_delta = self.eta * e * Phi_xk
+            self.weights = np.add(self.weights, weight_delta)
+    
     def batch_learn_weights(self):
-        self.learn_weights_least_squares()
+        if self.weight_learn == 'delta':
+            self.learn_weights_delta_rule()
+        else:
+            self.learn_weights_least_squares()
         Phi = self.calc_Phi(self.X)
         net_out = np.matmul(Phi, self.weights)
         f = self.T
