@@ -14,7 +14,7 @@ class RBF_Net():
             sum to compute the output for a given x.
         
     """
-    def __init__(self, X, T, hidden_dim, weight_learn = 'ls'):
+    def __init__(self, X, T, hidden_dim, weight_learn = 'ls', CL = True):
         self.N = X.shape[1]
         self.output_dim = T.shape[0]
         self.hidden_dim = hidden_dim
@@ -28,6 +28,7 @@ class RBF_Net():
         self.sigmas = self.init_sigmas()
         self.weights = self.init_weights()
         self.weight_learn = weight_learn
+        self.CL = CL
         self.rbf_step_size = 0.2
         self.rbf_updates = self.N
         self.winners = 1
@@ -87,13 +88,15 @@ class RBF_Net():
     def CL_rbf_units(self):
         for update in range(self.rbf_updates):
             rand_idx = random.randrange(self.N)
-            x = self.X[:,i].reshape(X.shape[0], 1)
-            distances = np.zeros(self.hidden_dim, dtype = object)
+            x = self.X[:,rand_idx].reshape(self.X.shape[0], 1)
+            distances = np.zeros([self.hidden_dim, 2], dtype = object)
             for unit_idx in range(self.hidden_dim):
-                dist = sq_2_norm(x, self.mus[unit_idx])
-                distances[rand_idx] = np.array([unit_idx, dist])
+                dist = self.sq_2_norm(x, self.mus[unit_idx])
+                distances[unit_idx,:] = np.array([unit_idx, dist])
             sorted_dists = distances[distances[:,1].argsort()]
-            unit_inds = sorted_dists[:self.winners,:]
+            unit_inds = sorted_dists[:self.winners,:][:,0]
+            for update_idx in unit_inds:
+                self.update_rbf_centre(x, update_idx)
     
     def update_rbf_centre(self, x, w_idx):
         w = self.mus[w_idx]
@@ -107,6 +110,8 @@ class RBF_Net():
     
     def train(self):
         for e in range(self.epochs):
+            if self.CL:
+                self.CL_rbf_units()
             self.batch_learn_weights()
     
     def predict(self, X):
