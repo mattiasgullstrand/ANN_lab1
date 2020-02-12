@@ -1,5 +1,5 @@
 import numpy as np
-import activation_functions as act_funs
+import activation_functions_v2 as act_funs
 import matplotlib.pyplot as plt
 
 class Two_Layer_Delta_Rule():
@@ -134,6 +134,17 @@ class Two_Layer_Delta_Rule():
             return np.sign(y)
         else:
             return y
+    
+    def predict(self, x):
+        pred_vec = []
+        for i in range(self.N):
+            x = self.X[:,i].reshape(self.X.shape[0], 1)
+            H_in = np.matmul(self.W1_train, x)
+            H = act_funs.shifted_sigmoid(H_in)
+            y_in = np.matmul(self.W2_train, H)
+            y = act_funs.shifted_sigmoid(y_in)
+            pred_vec.append(y)
+        return np.array(pred_vec)
     
     def plot_errors(self):
         plt.plot(self.errors)

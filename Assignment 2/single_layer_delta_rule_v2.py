@@ -1,5 +1,5 @@
 import numpy as np
-import activation_functions as act_funs
+import activation_functions_v2 as act_funs
 import matplotlib.pyplot as plt
 
 class Single_Layer_Delta_Rule():
@@ -67,6 +67,14 @@ class Single_Layer_Delta_Rule():
                 self.seq_learn()
             else:
                 print("Unknown learning type")
+
+    def predict(self, x):
+        pred_vec = []
+        for i in range(self.N):
+            x = self.X[:,i].reshape(self.X.shape[0], 1)
+            y = np.matmul(self.W_train, x)
+            pred_vec.append(y)
+        return np.array(pred_vec)
     
     def plot_errors(self):
         plt.plot(self.errors)

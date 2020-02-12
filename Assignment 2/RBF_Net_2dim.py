@@ -2,8 +2,9 @@ import numpy as np
 import activation_functions_v2 as act_funs
 import matplotlib.pyplot as plt
 import random
+import math
 
-class RBF_Net():
+class RBF_Net_2dim():
     """
         - X is the input matrix where each column is a sample
         - T is the target matrix where coulmn i is the target 
@@ -34,24 +35,35 @@ class RBF_Net():
         self.winners = 1
     
     def init_mus(self):
-        return np.linspace(np.min(self.X), np.max(self.X), self.hidden_dim)
+        mu_grid = np.zeros([self.hidden_dim, 2], dtype = object)
+        for i in range(self.hidden_dim):
+            rand_idx = random.randrange(self.N)
+            rand_pattern = self.X[:,rand_idx]
+            mu_grid[i] = rand_pattern
+        return mu_grid
     
     def init_sigmas(self):
         return np.ones(self.hidden_dim)
     
     def init_weights(self):
-        return np.random.rand(self.hidden_dim, 1)
+        return np.random.rand(self.hidden_dim, 2)
     
     def calc_Phi(self, X):
         # Specify which X
-        Phi = np.zeros([self.N, self.hidden_dim])
+        Phi = np.zeros([self.N, self.hidden_dim], dtype = object)
         for i in range(self.N):
             x = X[:,i].reshape(X.shape[0], 1)
             for j in range(self.hidden_dim):
                 mu_j = self.mus[j]
                 sigma_j = self.sigmas[j]
-                Phi[i,j] = act_funs.gaussian_rbf(x, mu_j, sigma_j)
+                Phi[i,j] = self.gaussian_rbf(x.flatten(), mu_j, sigma_j)
         return Phi
+    
+    def gaussian_rbf(self, x, mu, sigma):
+        vec = -np.square(x - mu)/(2*np.square(sigma))
+        exp_vec = np.array([math.exp(i) for i in vec])
+        return exp_vec
+        #return np.exp(-np.square(x - mu)/(2*np.square(sigma)))
     
     def learn_weights_least_squares(self):
         # Learn weights in batch mode, taking all samples
@@ -68,9 +80,10 @@ class RBF_Net():
         f = self.T
         for k in range(self.N):
             Phi_xk = Phi[k,:].reshape(Phi.shape[1], 1)
-            f_xk = f[k,:].reshape(1,1)
-            e = f_xk - np.matmul(Phi_xk.T, self.weights)
-            weight_delta = self.eta * e * Phi_xk
+            f_xk = f[k,:].reshape(f.shape[1],1)
+            out = np.dot(Phi_xk.T, self.weights)
+            e = f_xk - out.T
+            weight_delta = self.eta * np.dot(e, Phi_xk.T).T
             self.weights = np.add(self.weights, weight_delta)
     
     def batch_learn_weights(self):
@@ -79,7 +92,7 @@ class RBF_Net():
         else:
             self.learn_weights_least_squares()
         Phi = self.calc_Phi(self.X)
-        net_out = np.matmul(Phi, self.weights)
+        net_out = np.dot(Phi, self.weights)
         f = self.T
         abs_model_diff = np.abs(net_out - f)
         abs_residual = np.mean(abs_model_diff)
@@ -88,10 +101,11 @@ class RBF_Net():
     def CL_rbf_units(self):
         for update in range(self.rbf_updates):
             rand_idx = random.randrange(self.N)
-            x = self.X[:,rand_idx].reshape(self.X.shape[0], 1)
+            x = self.X[:,rand_idx].reshape(self.X.shape[0], 1).flatten()
             distances = np.zeros([self.hidden_dim, 2], dtype = object)
             for unit_idx in range(self.hidden_dim):
-                dist = self.sq_2_norm(x, self.mus[unit_idx])
+                mu = self.mus[unit_idx]
+                dist = self.sq_2_norm(x, mu)
                 distances[unit_idx,:] = np.array([unit_idx, dist])
             sorted_dists = distances[distances[:,1].argsort()]
             unit_inds = sorted_dists[:self.winners,:][:,0]
@@ -99,11 +113,11 @@ class RBF_Net():
                 self.update_rbf_centre(x, update_idx)
     
     def update_rbf_centre(self, x, w_idx):
-        w = self.mus[w_idx]
-        self.mus[w_idx] = w + self.rbf_step_size*(x - w)
+        w = self.mus[int(w_idx)]
+        self.mus[int(w_idx)] = w + self.rbf_step_size*(x - w)
     
     def sq_2_norm(self, x1, x2):
-        return np.matmul((x1 - x2).T, (x1 - x2))
+        return np.dot((x1 - x2), (x1 - x2))
         
     def square_transform(self, x):
         return np.sign(x)
