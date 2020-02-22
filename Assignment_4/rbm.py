@@ -55,7 +55,7 @@ class RestrictedBoltzmannMachine():
         
         self.momentum = 0.7
 
-        self.print_period = 5000
+        self.print_period = 500
         
         self.rf = { # receptive-fields. Only applicable when visible layer is input data
             "period" : 5000, # iteration period to visualize
@@ -78,17 +78,23 @@ class RestrictedBoltzmannMachine():
         print ("learning CD1")
         
         n_samples = visible_trainset.shape[0]
-
+        start = 0
+        end = 20
         for it in range(n_iterations):
 
 	    # [TODO TASK 4.1] run k=1 alternating Gibbs sampling : v_0 -> h_0 ->  v_1 -> h_1.
+            visible_minibatch = visible_trainset[start:end,:] 
             # you may need to use the inference functions 'get_h_given_v' and 'get_v_given_h'.
             # note that inference methods returns both probabilities and activations (samples from probablities) and you may have to decide when to use what.
-
+            v0 = visible_minibatch # Probabilities
+            h0 = self.get_h_given_v(v0)[1] # Activations
+            v1 = self.get_v_given_h(h0)[1] # Activations
+            h1 = self.get_h_given_v(v1)[0] # Probabilities
             # [TODO TASK 4.1] update the parameters using function 'update_params'
-            
+            self.update_params(v0, h0, v1, h1)
+
             # visualize once in a while when visible layer is input images
-            
+
             if it % self.rf["period"] == 0 and self.is_bottom:
                 
                 viz_rf(weights=self.weight_vh[:,self.rf["ids"]].reshape((self.image_size[0],self.image_size[1],-1)), it=it, grid=self.rf["grid"])
@@ -97,7 +103,10 @@ class RestrictedBoltzmannMachine():
             
             if it % self.print_period == 0 :
 
-                print ("iteration=%7d recon_loss=%4.4f"%(it, np.linalg.norm(visible_trainset - visible_trainset)))
+                print ("iteration=%7d recon_loss=%4.4f"%(it, np.linalg.norm(v0.T - v1)))
+            
+            start = end
+            end = start + 20
         
         return
     
@@ -117,14 +126,14 @@ class RestrictedBoltzmannMachine():
         """
 
         # [TODO TASK 4.1] get the gradients from the arguments (replace the 0s below) and update the weight and bias parameters
+
+        self.delta_bias_v += v_0.T - v_k
+        self.delta_weight_vh += np.dot(v_0.T, h_0.T) - np.dot(v_k, h_k.reshape(self.batch_size,self.ndim_hidden))
+        self.delta_bias_h += h_0 - h_k
         
-        self.delta_bias_v += 0
-        self.delta_weight_vh += 0
-        self.delta_bias_h += 0
-        
-        self.bias_v += self.delta_bias_v
-        self.weight_vh += self.delta_weight_vh
-        self.bias_h += self.delta_bias_h
+        self.bias_v += self.learning_rate*(np.mean(self.delta_bias_v.T, axis = 0))
+        self.weight_vh += self.learning_rate*(self.delta_weight_vh)
+        self.bias_h += self.learning_rate*(np.mean(self.delta_bias_h.T, axis = 0))
         
         return
 
@@ -146,8 +155,12 @@ class RestrictedBoltzmannMachine():
         n_samples = visible_minibatch.shape[0]
 
         # [TODO TASK 4.1] compute probabilities and activations (samples from probabilities) of hidden layer (replace the zeros below) 
+        support = np.dot(visible_minibatch.reshape(20,784), self.weight_vh).T + self.bias_h.reshape(self.bias_h.shape[0], 1)
+        on_probabilities = sigmoid(support)
+        activations = sample_binary(on_probabilities)
         
-        return np.zeros((n_samples,self.ndim_hidden)), np.zeros((n_samples,self.ndim_hidden))
+        #return np.zeros((n_samples,self.ndim_hidden)), np.zeros((n_samples,self.ndim_hidden))
+        return (on_probabilities, activations)
 
 
     def get_v_given_h(self,hidden_minibatch):
@@ -185,9 +198,11 @@ class RestrictedBoltzmannMachine():
                         
             # [TODO TASK 4.1] compute probabilities and activations (samples from probabilities) of visible layer (replace the pass and zeros below)             
 
-            pass
+            support = np.dot(self.weight_vh, hidden_minibatch) + self.bias_v.reshape(self.bias_v.shape[0], 1)
+            on_probabilities = sigmoid(support)
+            activations = sample_binary(on_probabilities)
         
-        return np.zeros((n_samples,self.ndim_visible)), np.zeros((n_samples,self.ndim_visible))
+        return (on_probabilities, activations)
 
 
     

@@ -12,15 +12,16 @@ if __name__ == "__main__":
     print ("\nStarting a Restricted Boltzmann Machine..")
 
     rbm = RestrictedBoltzmannMachine(ndim_visible=image_size[0]*image_size[1],
-                                     ndim_hidden=200,
+                                     ndim_hidden=500,
                                      is_bottom=True,
                                      image_size=image_size,
                                      is_top=False,
                                      n_labels=10,
-                                     batch_size=10
+                                     batch_size=20
     )
     
-    rbm.cd1(visible_trainset=train_imgs, n_iterations=10000)
+    for i in range(20):
+        rbm.cd1(visible_trainset=train_imgs, n_iterations=int(60000/20))
     
     ''' deep- belief net '''
 
