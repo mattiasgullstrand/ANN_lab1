@@ -1,6 +1,7 @@
 from util import *
 from rbm import RestrictedBoltzmannMachine 
 from dbn import DeepBeliefNet
+import sys
 
 if __name__ == "__main__":
 
@@ -20,9 +21,12 @@ if __name__ == "__main__":
                                      batch_size=20
     )
     
-    for i in range(20):
-        rbm.cd1(visible_trainset=train_imgs, n_iterations=int(60000/20))
-    
+    epochs = 10
+    n_samples = train_imgs.shape[0]
+    for i in range(epochs):
+        print("Epoch: ", i+1)
+        rbm.cd1(visible_trainset=train_imgs, n_iterations= n_samples * epochs)
+    sys.exit()
     ''' deep- belief net '''
 
     print ("\nStarting a Deep Belief Net..")
